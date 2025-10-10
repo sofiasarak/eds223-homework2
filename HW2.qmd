@@ -1,0 +1,90 @@
+---
+title: "EDS223 Homework 2"
+author: "Sofia Sarak"
+format: pdf
+editor: visual
+---
+
+* include unit tests and warnings/error messages!
+
+gt package: install and load
+
+```{r}
+# basic syntax
+# Use the gt function
+data %>%
+  gt() %>% 
+  tab_header(title = md("What a **nice title**"),
+               subtitle = md("Pretty *cool subtitle* too, `isn't it?`"))
+```
+
+
+## Initial Setup
+
+```{r}
+# Loading in necessary libraries
+```
+
+```{r}
+# Loading in data
+```
+
+```{r}
+# Exploring and transforming CRS'
+```
+
+
+# Part 1: Legacy of redlining in current environmental (in)justice
+
+1. **Create a map of historical redlining neighborhoods**, including:
+- neighborhoods colored by HOLC grade
+- an appropriate base map
+- a clear title and legend
+
+```{r}
+
+```
+
+2. **Create a table** summarizing:
+- the percentage of census block groups that fall within each HOLC grade
+- Also include the percent of census black groups that don’t fall within a HOLC grade
+- Hint: The HOLC data contains the grades and the EJScreen data contains the census blocks, so you will need to combine the data spatially before doing summary statistics. Once you combine and no longer need the geometries, you can use `st_drop_geometry()`.
+
+```{r}
+
+```
+
+3. **Create at least two visualizations summarizing current conditions** (from the EJScreen data) within HOLC grades using the mean of the following variables (you may combine variables or create separate plots):
+- % low income
+- percentile for Particulate Matter 2.5
+- percentile for low life expectancy
+- Use `ggplot` for your visualizations! You will first need to calculate mean of each variable grouped by HOLC grade.
+
+Visualization 1
+```{r}
+
+```
+
+Visualization 2
+```{r}
+
+```
+
+4. **Write a brief paragraph reflecting on these results**
+- Interpret the patterns you observe in your results
+- Discuss potential relationships between historical redlining grades and current environmental/socioeconomic conditions
+
+# Part 2: Legacy of redlining in biodiversity observations
+
+**You must produce the following based on observations from 2021-2023:**
+
+1. **A figure summarizing the percent of observations within redlined neighborhoods within each HOLC grade**
+
+Create a visualizations that shows:
+
+- The percentage of bird observations within each HOLC grade
+- Include an appropiate title, axis labels, and legend
+- Hints: Ensure the bird observations and HOLC dataset have matching CRS’, then perform a spatial join to assign each bird observations to a corresponding HOLC grade.
+
+2. Spoiler alert!! Our results don’t match the findings from Ellis-Soto et al. 2023! Read the abstract of the study. Why might we have obtained different results in our analysis? What did the paper consider that we did not?
+
