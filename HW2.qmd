@@ -23,14 +23,28 @@ data %>%
 
 ```{r}
 # Loading in necessary libraries
+library(here)
+library(tidyverse)
+library(sf)
+library(stars)
+library(tmap)
 ```
 
 ```{r}
 # Loading in data
+ineq <- st_read(here('data/mapping-inequality/mapping-inequality-los-angeles.json'))
+birds <- st_read(here('data/gbif-birds-LA/gbif-birds-LA.shp'))
 ```
-
+Exploring and Trasnforming CRS'
 ```{r}
-# Exploring and transforming CRS'
+# Checking to see if CRS' of each dataset are the same
+if (st_crs(ineq) == st_crs(birds)){
+  print("Same CRS")
+} else {
+    print("Different CRS")
+}
+
+# the two data sets have the same CRS, yay!
 ```
 
 
@@ -42,7 +56,20 @@ data %>%
 - a clear title and legend
 
 ```{r}
+# sourcing base map
+ejscreen <- st_read(here("data", "ejscreen","EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb"))
 
+la <- ejscreen %>%
+  filter(ST_ABBREV == "CA") %>% 
+  filter(CNTY_NAME %in% c("Los Angeles County"))
+```
+
+
+```{r}
+tm_shape(la, bbox = ineq) + 
+  tm_borders() +
+tm_shape(ineq) +
+  tm_fill("grade") 
 ```
 
 2. **Create a table** summarizing:
