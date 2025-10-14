@@ -6,7 +6,7 @@ The assignment explores historically redlined districts in Los Angeles County, C
 
 The analysis in this repository includes a spatial visualization of HOLC grades across LA, visualizations comparing environmental justice indicators across the grades, and a visualization exploring the percentage of bird observations contributed by citizen scientists, also by grade. These results are then summarized and reflected on in responses.
 
-For more information on the homework assignment itself (including all of the data and sources), reference the [assignment description]((https://eds-223-geospatial.github.io/assignments/HW2.html)).
+For more information on the homework assignment itself (including all of the data and sources), reference the [assignment description](https://eds-223-geospatial.github.io/assignments/HW2.html).
 
 ## Course Information
 
