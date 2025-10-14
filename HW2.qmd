@@ -7,18 +7,6 @@ editor: visual
 
 * include unit tests and warnings/error messages!
 
-gt package: install and load
-
-```{r}
-# basic syntax
-# Use the gt function
-data %>%
-  gt() %>% 
-  tab_header(title = md("What a **nice title**"),
-               subtitle = md("Pretty *cool subtitle* too, `isn't it?`"))
-```
-
-
 ## Initial Setup
 
 ```{r}
@@ -28,6 +16,7 @@ library(tidyverse)
 library(sf)
 library(stars)
 library(tmap)
+library(gt)
 ```
 
 ```{r}
@@ -56,20 +45,52 @@ if (st_crs(ineq) == st_crs(birds)){
 - a clear title and legend
 
 ```{r}
-# sourcing base map
+# Sourcing base map
 ejscreen <- st_read(here("data", "ejscreen","EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb"))
 
 la <- ejscreen %>%
   filter(ST_ABBREV == "CA") %>% 
   filter(CNTY_NAME %in% c("Los Angeles County"))
 ```
-
+```{r}
+# Checking CRS before plotting
+if (st_crs(ineq) == st_crs(la)){
+  print("Same CRS")
+} else {
+    print("Different CRS")
+}
+```
 
 ```{r}
+# Transforming CRS to match ineq
+la <- st_transform(la, crs = st_crs(ineq))
+
+# And confirming it worked
+if (st_crs(ineq) == st_crs(la)){
+  print("Same CRS")
+} else {
+    print("Different CRS")
+}
+```
+
+```{r}
+# Creating a custom color theme for map, as well as for following plots
+# With each grade corresponding to the color defined/typically used by HOLC
+grade_colors <- c("A" = "darkgreen", "B" = "darkblue", "C" = "yellow", "D" = "darkred", "NA" = "gray")
+```
+
+```{r}
+# Creating a map of historical redlining neighborhoods
 tm_shape(la, bbox = ineq) + 
-  tm_borders() +
+  tm_borders(col = "gray35") +
 tm_shape(ineq) +
-  tm_fill("grade") 
+  tm_polygons(
+  fill = "grade",
+  fill.legend = tm_legend(title = "HOLC Grade"),
+  fill.scale = tm_scale_ordinal(values = grade_colors)) +
+tm_title(text = "Historical Redlining Neighborhoods, Los Angeles") +
+tm_compass() + # adding North arrow
+tm_scalebar() # adding scalebar
 ```
 
 2. **Create a table** summarizing:
@@ -78,7 +99,57 @@ tm_shape(ineq) +
 - Hint: The HOLC data contains the grades and the EJScreen data contains the census blocks, so you will need to combine the data spatially before doing summary statistics. Once you combine and no longer need the geometries, you can use `st_drop_geometry()`.
 
 ```{r}
+# Attempting to combine the two data sets
+# table <- st_join(ineq, la)
 
+# Oh no! An error!
+# After researching error, it appears that it is telling me that one of my data frames in "invalid"
+
+# Checking validity
+st_is_valid(la) %>% 
+  table() # Using table() to create an output that counts up the TRUEs and FALSEs
+
+st_is_valid(ineq) %>% 
+  table()
+
+# The ineq data frame is the one with invalid elements!
+```
+```{r}
+# Making all of ineq valid
+ineq <- st_make_valid(ineq)
+
+# And checking that it worked
+st_is_valid(ineq) %>% 
+  table()
+```
+
+```{r}
+# Joining the two data frames
+table <- st_join(ineq, la) %>% 
+  st_drop_geometry() # and dropping geometry
+
+# The "NA" values in the grade column represent census block groups that don't fall within a HOLC Grade
+# To make this more clear in following visualizations, I change "NA" to "No Grade"
+table$grade[is.na(table$grade)] <- "No Grade"
+```
+
+```{r}
+# Creating summary table
+summ_table <- table %>% 
+  group_by(grade) %>% 
+  summarize(percentage = round((n()/length(table$ID))*100, 2)) %>% # calculating % and rounding to 2 decimal places
+  gt() %>% # using gt package to make an appealing table
+  cols_label(
+    grade = "HOLC Grade",  # changing column names
+    percentage = "%") %>% 
+  tab_header(
+    title = "Los Angeles HOLC Grade Composition",  # adding a title
+    subtitle = "Represented by Percentage of Census Block Groups")
+
+summ_table
+
+# things to add: change title and add a footnote for the NA values
+# LA County HOLC Grade Composition
 ```
 
 3. **Create at least two visualizations summarizing current conditions** (from the EJScreen data) within HOLC grades using the mean of the following variables (you may combine variables or create separate plots):
@@ -89,17 +160,79 @@ tm_shape(ineq) +
 
 Visualization 1
 ```{r}
+# Calculating mean of % low income
+low_inc_mean <- table %>% 
+  group_by(grade) %>% 
+  summarize(low_inc = mean(LOWINCPCT*100)) # *100 because low income is represented as a proportion in original data frame
 
+# Replacing "NA" to "No Grade" again, for visualization purposes
+low_inc_mean$grade[is.na(low_inc_mean$grade)] <- "No Grade"
+```
+
+```{r}
+# Creating a bar plot
+ggplot(data = low_inc_mean, aes(x = grade, y = low_inc)) +
+  geom_col(aes(fill = grade)) + # coloring by HOLC Grade
+  scale_fill_manual(values = grade_colors, guide = "none") + # removing legend bc it is redundant
+  theme_light() +
+  labs(title = "Census Block Percent Low Income, by HOLC Grade",
+       subtitle = "Los Angeles County",
+       x = "HOLC Grade",
+       y = "Mean % Low Income")
 ```
 
 Visualization 2
 ```{r}
+# Calculating mean of particulate matter 2.5 percentile
+pm_mean <- table %>% 
+  group_by(grade) %>% 
+  summarize(part_matt = mean(P_D5_PM25))
 
+# Calculating mean of low life expectancy percentile
+life_exp_mean <- table %>% 
+  group_by(grade) %>% 
+  summarize(life_exp = mean(P_LIFEEXPPCT, na.rm = TRUE))
+
+# Joining the two summaries
+percentiles <- full_join(pm_mean, life_exp_mean, by = "grade")
+
+# Pivoting longer, to be able to facet in my visualization
+percentiles_long <- pivot_longer(percentiles, cols = part_matt:life_exp, names_to = "vars", values_to = "mean")
+
+# Replacing "NA" to "No Grade" again, for visualization purposes
+percentiles_long$grade[is.na(percentiles_long$grade)] <- "No Grade"
+```
+
+```{r}
+# Creating facet labels, for cleaner plot headings
+facet_labels <- c(
+  "life_exp" = "Low Life Expectancy",
+  "part_matt" = "Particulate Matter 2.5")
+
+# Creating a bar plot, faceting by percentile variable
+ggplot(data = percentiles_long, aes(x = grade, y = mean)) +
+  geom_col(aes(fill = grade)) +
+  facet_wrap(~vars, labeller = as_labeller(facet_labels)) + # faceting and specifying plot headings
+  scale_fill_manual(values = grade_colors, guide = "none") +
+  theme_light() + 
+  labs(title = "Environmental Justice Indicator Percentiles, by HOLC Grade",
+       subtitle = "Los Angeles County", 
+       x = "HOLC Grade",
+       y = "Mean Percentile") 
 ```
 
 4. **Write a brief paragraph reflecting on these results**
 - Interpret the patterns you observe in your results
 - Discuss potential relationships between historical redlining grades and current environmental/socioeconomic conditions
+
+There appears to be a clear pattern across all three of the analyses, in which "highest" HOLC grade (A) has the lowest percent low income, percentile for Particulate Matter 2.5, and percentile for low life expectancy. And without exception, the subsequent grades (B, C, and D) showed increases in these values. Census block groups categorized as having a HOLC grade of D had the highest percentage/percentile across all three categories. Interestingly, the "No Grade" category was always slightly lower than grade D, but stayed in the same range as grade C.
+
+Our results corroborate two historically-observed relationships:
+
+1. Communities that were "redlined" targeted low-income communities, with little consideration for actual safety.
+2. Low-income communities face environmental injustice; our analyses specifically highlight air quality, and also relate living conditions to low life expectancy. 
+
+Ultimately, our results suggest that areas deemed most "hazardous" by HOLC tend to be disadvantaged communities, facing socioeconomic and environmental justice issues. Redlining creates racial discrimination, keeping areas in need from receiving services that make their living conditions equal to that of the grade A communities around them.
 
 # Part 2: Legacy of redlining in biodiversity observations
 
@@ -113,5 +246,58 @@ Create a visualizations that shows:
 - Include an appropiate title, axis labels, and legend
 - Hints: Ensure the bird observations and HOLC dataset have matching CRS’, then perform a spatial join to assign each bird observations to a corresponding HOLC grade.
 
+```{r}
+# Checking CRS before plotting
+if (st_crs(ineq) == st_crs(birds)){
+  print("Same CRS")
+} else {
+    print("Different CRS")
+}
+
+# Performing spatial join
+biodiv <- st_join(ineq, birds) %>% 
+  st_drop_geometry()
+```
+
+```{r}
+# Observations for visualization must be from 2021-2023, so checking if all data is in range
+unique(biodiv$year)
+
+# Noticed that there were NA values, so dropped those as they won't be helpful for the visualization
+biodiv <- biodiv[!is.na(biodiv$year),]
+```
+
+```{r}
+# Calculating percent of bird observations in each HOLC grade
+bird_perc <- biodiv %>% 
+  group_by(grade) %>% 
+  summarize(percent = round(n()/length(biodiv$year)*100, 2))
+
+# Viewing summary
+bird_perc
+
+# Replacing "NA" to "No Grade" again, for visualization purposes
+bird_perc$grade[is.na(bird_perc$grade)] <- "No Grade"
+```
+```{r}
+# Plotting a bar graph using our summary
+ggplot(data = bird_perc, aes(x = grade, y = percent)) +
+  geom_col((aes(fill = grade))) +
+   scale_fill_manual(values = grade_colors, guide = "none") + # using the same custom colors as previous plots
+  theme_light() + 
+  labs(title = "Bird Observations Across HOLC Grades",
+       x = "HOLC Grade",
+       y = "Percent of Observations") 
+```
+
+
 2. Spoiler alert!! Our results don’t match the findings from Ellis-Soto et al. 2023! Read the abstract of the study. Why might we have obtained different results in our analysis? What did the paper consider that we did not?
+
+**Response:**
+
+Our results appear to suggest that the highest percentage of bird observations in LA County were observed in census block groups categorized as HOLC grade of C, or "definitely declining." The other three grades -- A, B, and D -- have slight variation, but all fall generally in the same range. In fact, the percentage of bird observations in grade A ("best") is only 0.07 percentage points higher than that of grade D ("hazardous").
+
+Findings from Ellis-Soto et al. 2023, on the other hand, suggest a clear pattern between HOLC grade and the percentage of bird observations recorded. They saw that areas which were deemed "desirable" (grades A and B) to have more than twice the density of observations than areas that were redlined, or deemed "hazardous" (grades C and D). As such, our results differ. 
+
+It is important to consider, however, the breadth of the analyses. To quote the abstract from Ellis-Soto et al. 2023: "After accounting for differences in present day vegetation, open space, population density and climate, we find significantly lower sampling density and sampling completeness in these redlined neighborhoods." It appears that because our analysis *only* considered HOLC grade and percentage of bird observations, we lost out on the impact of confounding variables, such as those listed within the abstract. The findings of Ellis-Soto et al. 2023 are controlled for significant components of bird observation frequency that we did not include, which explains why we have obtained different results (and suggests that their results are way more trustworthy than ours).
 
