@@ -4,7 +4,7 @@ This repository contains the response to Homework 2 in EDS223 - *Geospatial Anal
 
 The assignment explores historically redlined districts in Los Angeles County, California. It incorporates spatial data on the "residential security" grades assigned by the Home Owners’ Loan Corporation (HOLC) about eighty years ago. More information on the economic and racial segregation that came from this grading system, and redlining, can be found [here](https://ncrc.org/holc/). 
 
-The analysis in this repository includes a spatial visualization of HOLC grades across LA, visualizations comparing environmental justice indicators across the grades, and a visualization exploring the percentage of bird observations contributed by citizen scientists, also by grade. These results are then summarized and reflected on in responses.
+The analysis in this repository includes a spatial visualization of HOLC grades across LA, visualizations comparing environmental justice indicators across the grades, and a visualization exploring bird biodiversity and percentages associated with observation contribution, also by grade. These results are then summarized and reflected on in responses.
 
 For more information on the homework assignment itself (including all of the data and sources), reference the [assignment description](https://eds-223-geospatial.github.io/assignments/HW2.html).
 
