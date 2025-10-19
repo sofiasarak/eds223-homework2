@@ -1,8 +1,14 @@
 ---
-title: "EDS223 Homework 2"
+title: "Homework 2: Redlining in LA County"
 author: "Sofia Sarak"
+date: "October 18, 2025"
 format: pdf
 editor: visual
+execute: 
+  warning: false
+knitr: 
+  opts_chunk:
+    message: false
 ---
 
 The following document contains visualizations relating HOLC grades and environmental indicators (potentially revealing environmental injustices) in Los Angeles County, California.
@@ -46,8 +52,9 @@ if (st_crs(ineq) == st_crs(birds)){
 -   an appropriate base map
 -   a clear title and legend
 
+
 ```{r}
-# Loading in base map
+# Loading in base map data
 ejscreen <- st_read(here("data", "ejscreen","EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb"))
 
 # Filtering data for only LA County
