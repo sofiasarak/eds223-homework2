@@ -1,4 +1,4 @@
-# EDS223 - Homework 2
+# EDS223 Homework 2: Redlining in LA County
 
 This repository contains the response to Homework 2 in EDS223 - *Geospatial Analysis & Remote Sensing*, completed by Sofia Sarak.
 
